@@ -1,0 +1,28 @@
+Changes
+lib/Routes/Tiny.pm
+lib/Routes/Tiny/Match.pm
+lib/Routes/Tiny/Pattern.pm
+Makefile.PL
+MANIFEST			This list of files
+MANIFEST.SKIP
+README
+t/build-path.t
+t/empty.t
+t/globbing.t
+t/grouping.t
+t/match-with-constraints.t
+t/match-with-defaults.t
+t/match-with-optional-and-defaults.t
+t/match-with-optional.t
+t/match.t
+t/method.t
+t/trailing-slash.t
+t/unbalanced-parentheses.t
+t/unmatched.t
+xt/changes.t
+xt/kwalitee.t
+xt/perlcritic.t
+xt/perlcriticrc
+xt/pod-coverage.t
+xt/pod.t
+META.yml                                 Module meta-data (added by MakeMaker)
