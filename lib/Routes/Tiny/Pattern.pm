@@ -18,27 +18,19 @@ sub new {
 
 sub name { return shift->{name} }
 
-sub pattern {
-    my $self = shift;
-
-    return $self->{pattern} if ref $self->{pattern} eq 'Regexp';
-
-    $self->_compile;
-
-    return $self->{pattern};
-}
-
 sub match {
     my $self = shift;
     my ($path, %args) = @_;
 
     return unless $self->_match_method($args{method});
 
+    $self->_prepare_pattern;
+
     unless ($path =~ m{ ^ / }xms) {
         $path = "/$path";
     }
 
-    my $pattern = $self->pattern;
+    my $pattern = $self->{pattern};
 
     my @captures = ($path =~ m/ $pattern /xms);
     return unless @captures;
@@ -56,77 +48,80 @@ sub match {
         }
     }
 
-    return $self->_build_match(pattern => $pattern, params => $params);
+    return $self->_build_match(name => $self->name, params => $params);
 }
 
 sub build_path {
     my $self   = shift;
     my %params = @_;
 
-    my $path = q{};
+    $self->_prepare_pattern;
 
     my @parts;
 
     my $optional_depth = 0;
+    my $trailing_slash = 0;
 
-    foreach my $part (@{$self->_parts}) {
-        my $type = $part->{type};
-        my $name = $part->{name};
+    foreach my $group_part (@{$self->{parts}}) {
+        my $path = '';
 
-        if ($type eq 'capture') {
-            if ($part->{optional} && exists $params{$name}) {
-                $optional_depth = $part->{optional};
+        foreach my $part (@$group_part) {
+            my $type = $part->{type};
+            my $name = $part->{name};
+
+            if ($type eq 'capture') {
+                if ($part->{level} && exists $params{$name}) {
+                    $optional_depth = $part->{level};
+                }
+
+                if (!exists $params{$name}) {
+                    next
+                      if $part->{level} && $part->{level} > $optional_depth;
+
+                    Carp::croak(
+                        "Required param '$part->{name}' was not passed when building a path"
+                    );
+                }
+
+                my $param = $params{$name};
+
+                if (defined(my $constraint = $part->{constraint})) {
+                    Carp::croak("Param '$name' fails a constraint")
+                      unless $param =~ m/^ $constraint $/xms;
+                }
+
+                $path .= $param;
             }
-
-            if (!exists $params{$name}) {
-                next
-                  if $part->{optional} && $part->{optional} > $optional_depth;
-
+            elsif ($type eq 'glob') {
                 Carp::croak(
-                    "Required param '$part->{name}' was not passed when building a path"
-                );
+                    "Required glob param '$name' was not passed when building a path"
+                ) unless exists $params{$name};
+
+                $path .= $params{$name};
+            }
+            elsif ($type eq 'text') {
+                $path .= $part->{text};
             }
 
-            my $param = $params{$name};
-
-            if (defined(my $constraint = $part->{constraint})) {
-                Carp::croak("Param '$name' fails a constraint")
-                  unless $param =~ m/^ $constraint $/xms;
-            }
-
-            push @parts, $param;
+            $trailing_slash = $part->{trailing_slash};
         }
-        elsif ($type eq 'glob') {
-            Carp::croak(
-                "Required glob param '$name' was not passed when building a path"
-            ) unless exists $params{$name};
 
-            push @parts, $params{$name};
-        }
-        elsif ($type eq 'text') {
-            push @parts, $part->{text};
+        if ($path ne '') {
+            push @parts, $path;
         }
     }
 
-    if (length $path) {
-        unshift @parts, $path;
+    my $path = q{/} . join q{/} => @parts;
+
+    if ($path ne '/' && $trailing_slash) {
+        $path .= q{/};
     }
 
-    return join q{/} => @parts;
-}
-
-sub _parts {
-    my $self = shift;
-
-    return $self->{parts} if ref $self->{pattern} eq 'Regexp';
-
-    $self->_compile;
-
-    return $self->{parts};
+    return $path;
 }
 
 sub _match_method {
-    my $self  = shift;
+    my $self = shift;
     my ($value) = @_;
 
     my $method = $self->{method};
@@ -138,34 +133,41 @@ sub _match_method {
     my $methods = $method;
     $methods = [$methods] unless ref $methods eq 'ARRAY';
 
-    return !! scalar grep { $_ eq $value } @{$methods};
+    return !!scalar grep { $_ eq $value } @{$methods};
 }
 
-sub _compile {
+sub _prepare_pattern {
     my $self = shift;
 
+    return $self->{pattern} if ref $self->{pattern} eq 'Regexp';
+
     my $pattern = $self->{pattern};
-
-    $self->{captures} = [];
-
-    my $re = q{};
-
     if ($pattern !~ m{ \A / }xms) {
         $pattern = q{/} . $pattern;
     }
 
-    my $par_depth = 0;
+    $self->{captures} = [];
 
+    my $re        = q{};
+    my $par_depth = 0;
     my @parts;
+
+    my $part;
 
     pos $pattern = 0;
     while (pos $pattern < length $pattern) {
         if ($pattern =~ m{ \G \/ }gcxms) {
+            if ($part) {
+                push @parts, $part;
+            }
+
+            $part = [];
             $re .= q{/};
         }
         elsif ($pattern =~ m{ \G :($TOKEN) }gcxms) {
             my $name = $1;
             my $constraint;
+
             if (exists $self->{constraints}->{$name}) {
                 $constraint = $self->{constraints}->{$name};
                 $re .= "($constraint)";
@@ -174,11 +176,11 @@ sub _compile {
                 $re .= '([^\/]+)';
             }
 
-            push @parts,
+            push @$part,
               { type       => 'capture',
                 name       => $name,
                 constraint => $constraint ? qr/^ $constraint $/xms : undef,
-                optional   => $par_depth
+                level      => $par_depth
               };
 
             push @{$self->{captures}}, $name;
@@ -188,7 +190,7 @@ sub _compile {
 
             $re .= '(.*)';
 
-            push @parts, {type => 'glob', name => $name};
+            push @$part, {type => 'glob', name => $name};
 
             push @{$self->{captures}}, $name;
         }
@@ -196,19 +198,26 @@ sub _compile {
             my $text = $1;
             $re .= quotemeta $text;
 
-            push @parts, {type => 'text', text => $text};
+            push @$part, {type => 'text', text => $text};
         }
         elsif ($pattern =~ m{ \G \( }gcxms) {
             $par_depth++;
             $re .= '(?: ';
+            next;
         }
         elsif ($pattern =~ m{ \G \)\? }gcxms) {
             $par_depth--;
             $re .= ' )?';
+            next;
         }
         elsif ($pattern =~ m{ \G \) }gcxms) {
             $par_depth--;
             $re .= ' )';
+            next;
+        }
+
+        if ($part->[-1] && substr($pattern, pos($pattern), 1) eq '/') {
+            $part->[-1]->{trailing_slash} = 1;
         }
     }
 
@@ -217,6 +226,10 @@ sub _compile {
     }
 
     $re = qr/^ $re $/xmsi;
+
+    if ($part && @$part) {
+        push @parts, $part;
+    }
 
     $self->{parts}   = [@parts];
     $self->{pattern} = $re;
@@ -263,10 +276,6 @@ Pass constraints.
 =head2 C<name>
 
 Pass route name.
-
-=head2 C<pattern>
-
-Pass actual pattern.
 
 =head1 METHODS
 

@@ -6,7 +6,7 @@ use warnings;
 require Carp;
 use Routes::Tiny::Pattern;
 
-our $VERSION = 0.009009;
+our $VERSION = 0.009011;
 
 sub new {
     my $class = shift;

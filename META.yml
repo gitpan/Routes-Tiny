@@ -1,6 +1,6 @@
 --- #YAML:1.0
 name:               Routes-Tiny
-version:            0.009009
+version:            0.009011
 abstract:           Routes
 author:
     - Viacheslav Tykhanovskyi <vti@cpan.org>

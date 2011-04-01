@@ -1,5 +1,15 @@
 Revision history for perl module Routes::Tiny
 
+0.009011 2011-04-01
+
+ - Pass 'name' instead of 'pattern' to the match object
+
+0.009010 2011-02-27
+
+ - Forward / is added when building a path
+ - Fixed path building when using grouping
+ - Fixed path building with trailing slash
+
 0.009009 2011-02-26
 
  - Initial release
