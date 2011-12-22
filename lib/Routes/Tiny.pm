@@ -6,7 +6,7 @@ use warnings;
 require Carp;
 use Routes::Tiny::Pattern;
 
-our $VERSION = 0.009013;
+our $VERSION = 0.009014;
 
 sub new {
     my $class = shift;
@@ -208,6 +208,10 @@ Build path from a given name and params.
 =head2 Repository
 
     http://github.com/vti/routes-tiny
+
+=head1 CREDITS
+
+Sergey Zasenko (und3f)
 
 =head1 AUTHOR
 
