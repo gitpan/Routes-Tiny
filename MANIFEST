@@ -5,10 +5,13 @@ lib/Routes/Tiny/Pattern.pm
 Makefile.PL
 MANIFEST			This list of files
 MANIFEST.SKIP
+MYMETA.json
+MYMETA.yml
 README
 t/empty.t
 t/globbing.t
 t/grouping.t
+t/match-with-arguments.t
 t/match-with-constraints.t
 t/match-with-defaults.t
 t/match-with-optional-and-defaults.t

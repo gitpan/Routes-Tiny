@@ -2,9 +2,10 @@
 abstract: Routes
 author:
   - 'Viacheslav Tykhanovskyi <vti@cpan.org>'
-build_requires: {}
+build_requires:
+  ExtUtils::MakeMaker: 0
 configure_requires: {}
-dynamic_config: 1
+dynamic_config: 0
 generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.130880'
 license: artistic_2
 meta-spec:
@@ -18,7 +19,6 @@ no_index:
     - t
 requires:
   Carp: 0
-  perl: 5.008007
 resources:
   license: http://dev.perl.org/licenses/
   repository: http://github.com/vti/routes-tiny
