@@ -1,25 +1,45 @@
 ---
 abstract: Routes
 author:
-  - 'Viacheslav Tykhanovskyi <vti@cpan.org>'
+  - 'Viacheslav Tykhanovskyi, C<vti@cpan.org>.'
 build_requires: {}
-configure_requires: {}
-dynamic_config: 1
-generated_by: 'ExtUtils::MakeMaker version 6.66, CPAN::Meta::Converter version 2.130880'
-license: artistic_2
+configure_requires:
+  CPAN::Meta: 0
+  CPAN::Meta::Prereqs: 0
+  Module::Build: 0.38
+dynamic_config: 0
+generated_by: 'Minilla/v0.4.3, CPAN::Meta::Converter version 2.130880'
+license: unknown
 meta-spec:
   url: http://module-build.sourceforge.net/META-spec-v1.4.html
   version: 1.4
-name: Routes-Tiny
+name: routes-tiny
 no_index:
   directory:
     - t
+    - xt
     - inc
-    - t
+    - share
+    - eg
+    - examples
+    - author
+provides:
+  Routes::Tiny:
+    file: lib/Routes/Tiny.pm
+    version: 0.11
+  Routes::Tiny::Match:
+    file: lib/Routes/Tiny/Match.pm
+  Routes::Tiny::Pattern:
+    file: lib/Routes/Tiny/Pattern.pm
 requires:
   Carp: 0
-  perl: 5.008007
+  Scalar::Util: 0
 resources:
-  license: http://dev.perl.org/licenses/
-  repository: http://github.com/vti/routes-tiny
-version: 0.1
+  bugtracker: https://github.com/vti/routes-tiny/issues
+  homepage: https://github.com/vti/routes-tiny
+  repository: git://github.com/vti/routes-tiny.git
+version: 0.11
+x_contributors:
+  - 'Sergey Zasenko <d3fin3@gmail.com>'
+  - 'Dmitry Smal <mialinx@gmail.com>'
+  - 'vti <viacheslav.t@gmail.com>'

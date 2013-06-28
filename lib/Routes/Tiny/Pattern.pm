@@ -3,21 +3,38 @@ package Routes::Tiny::Pattern;
 use strict;
 use warnings;
 
+require Scalar::Util;
 use Routes::Tiny::Match;
 
 my $TOKEN = '[^\/()]+';
 
 sub new {
     my $class = shift;
+    my (%params) = @_;
 
-    my $self = {captures => [], constraints => {}, @_};
+    my $self = {};
     bless $self, $class;
+
+    $self->{name}           = $params{name};
+    $self->{defaults}       = $params{defaults};
+    $self->{arguments}      = $params{arguments};
+    $self->{method}         = $params{method};
+    $self->{pattern}        = $params{pattern};
+    $self->{constraints}    = $params{constraints} || {};
+    $self->{routes}         = $params{routes};
+    $self->{subroutes}      = $params{subroutes};
+    $self->{strict_trailing_slash} = $params{strict_trailing_slash};
+
+    Scalar::Util::weaken($self->{routes}) if $self->{routes};
+    $self->{strict_trailing_slash} = 1 unless defined $self->{strict_trailing_slash};
 
     if (my $methods = $self->{method}) {
         $methods = [$methods] unless ref $methods eq 'ARRAY';
         $methods = [map {uc} @$methods];
         $self->{method} = $methods;
     }
+
+    $self->{captures} = [];
 
     $self->_prepare_pattern;
 
@@ -36,6 +53,10 @@ sub match {
 
     $path = '/' . $path unless substr($path, 0, 1) eq '/';
 
+    if (!$self->{strict_trailing_slash} && $path ne '/' && $path !~ m{/$}) {
+        $path .= '/';
+    }
+
     my @captures = ($path =~ $self->{pattern});
     return unless @captures;
 
@@ -51,16 +72,25 @@ sub match {
         }
     }
 
-    return $self->_build_match(
+    my $match = $self->_build_match(
         name      => $self->name,
         arguments => $self->arguments,
         captures  => $captures
     );
+
+    if ($self->{subroutes}) {
+        my $parent = $match;
+        my $tail = substr($path, length $&);
+        $match = $self->{subroutes}->match($tail); 
+        $match->{parent} = $parent if $match;
+    }
+
+    return $match;
 }
 
 sub build_path {
     my $self   = shift;
-    my %params = @_;
+    my (%params) = @_;
 
     my @parts;
 
@@ -134,7 +164,15 @@ sub build_path {
         }
     }
 
-    my $path = q{/} . join q{/} => @parts;
+    my $head = q{/};
+
+    my $parent_pattern = $self->{routes} && $self->{routes}->{parent_pattern};
+    if ($parent_pattern) {
+        $head = $parent_pattern->build_path(%params);
+        $head .= q{/} unless substr($head, -1) eq q{/};
+    }
+
+    my $path = $head . join q{/} => @parts;
 
     if ($path ne '/' && $trailing_slash) {
         $path .= q{/};
@@ -247,7 +285,24 @@ sub _prepare_pattern {
         Carp::croak("Parentheses are not balanced in pattern '$pattern'");
     }
 
-    $re = qr/^ $re $/xmsi;
+    if (!$self->{strict_trailing_slash} && !$self->{subroutes}) {
+        if ($re =~ m{/$}) {
+            $re .= '?';
+        }
+        elsif ($re =~ m{\)\?$}) {
+            $re =~ s{\)\?$}{/?)?}
+        }
+        else {
+            $re .= '/?';
+        }
+    }
+
+    if ($self->{subroutes}) {
+        $re = qr/^ $re /xmsi;
+    }
+    else {
+        $re = qr/^ $re $/xmsi;
+    }
 
     if ($part && @$part) {
         push @parts, $part;

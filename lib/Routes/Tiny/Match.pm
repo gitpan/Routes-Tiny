@@ -5,9 +5,15 @@ use warnings;
 
 sub new {
     my $class = shift;
+    my (%params) = @_;
 
-    my $self = {params => {}, @_};
+    my $self = {};
     bless $self, $class;
+
+    $self->{name}      = $params{name};
+    $self->{arguments} = $params{arguments};
+    $self->{captures}  = $params{captures};
+    $self->{parent}    = undef;
 
     return $self;
 }
@@ -18,7 +24,7 @@ sub arguments {
     return $self->{arguments};
 }
 
-sub params {&captures}
+sub params { &captures }
 
 sub captures {
     my $self = shift;
@@ -30,6 +36,12 @@ sub name {
     my $self = shift;
 
     return $self->{name};
+}
+
+sub parent {
+    my $self = shift;
+
+    return $self->{parent};
 }
 
 1;
@@ -45,6 +57,7 @@ Routes::Tiny::Match - Matched object
 
     my $name = $match->name;
     my $params_hashref = $match->params;
+    my $parent_match = $match->parent
 
 =head1 DESCRIPTION
 
@@ -72,7 +85,11 @@ Get params.
 
 =head2 C<params>
 
-An alias to C<captures.
+An alias to C<captures>.
+
+=head2 C<parent>
+
+Reference to parent match in case of matching subroutes.
 
 =head1 METHODS
 
