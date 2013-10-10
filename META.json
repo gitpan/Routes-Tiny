@@ -48,7 +48,7 @@
    "provides" : {
       "Routes::Tiny" : {
          "file" : "lib/Routes/Tiny.pm",
-         "version" : "0.11"
+         "version" : "0.12"
       },
       "Routes::Tiny::Match" : {
          "file" : "lib/Routes/Tiny/Match.pm"
@@ -68,7 +68,7 @@
          "web" : "https://github.com/vti/routes-tiny"
       }
    },
-   "version" : "0.11",
+   "version" : "0.12",
    "x_contributors" : [
       "Sergey Zasenko <d3fin3@gmail.com>",
       "Dmitry Smal <mialinx@gmail.com>",

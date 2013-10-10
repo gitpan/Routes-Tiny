@@ -7,7 +7,7 @@ require Carp;
 require Scalar::Util;
 use Routes::Tiny::Pattern;
 
-our $VERSION = 0.11;
+our $VERSION = 0.12;
 
 sub new {
     my $class = shift;
@@ -299,6 +299,8 @@ Sergey Zasenko (und3f)
 Roman Galeev (jamhed)
 
 Dmitry Smal (mialinx)
+
+Dinar (ziontab)
 
 =head1 AUTHOR
 
