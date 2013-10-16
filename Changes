@@ -1,5 +1,9 @@
 Revision history for perl module Routes::Tiny
 
+0.13 2013-10-16T18:51:38Z
+
+ - Fix optional param at route beginning (ziontab)
+
 0.12 2013-10-10T17:27:16Z
 
  - Pass params when matching to subroutes too (ziontab)
