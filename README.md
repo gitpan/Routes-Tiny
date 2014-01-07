@@ -1,112 +1,8 @@
-package Routes::Tiny;
-
-use strict;
-use warnings;
-
-require Carp;
-require Scalar::Util;
-use Routes::Tiny::Pattern;
-
-our $VERSION = 0.14;
-
-sub new {
-    my $class = shift;
-    my (%params) = @_;
-
-    my $self = {};
-    bless $self, $class;
-
-    $self->{strict_trailing_slash} = $params{strict_trailing_slash};
-
-    $self->{parent_pattern}        = undef;
-    $self->{patterns}              = [];
-    $self->{names}                 = {};
-    $self->{strict_trailing_slash} = 1
-      unless defined $self->{strict_trailing_slash};
-
-    return $self;
-}
-
-sub add_route {
-    my $self = shift;
-    my ($pattern, @args) = @_;
-
-    $pattern = $self->_build_pattern(
-        strict_trailing_slash => $self->{strict_trailing_slash},
-        routes                => $self,
-        pattern               => $pattern,
-        @args
-    );
-
-    push @{$self->{patterns}}, $pattern;
-
-    $self->_register_pattern_name($pattern) if $pattern->{name};
-
-    return $pattern;
-}
-
-sub mount {
-    my $self = shift;
-    my ($pattern, $routes, @args) = @_;
-
-    $pattern = $self->add_route($pattern, subroutes => $routes, @args);
-    $routes->{parent_pattern} = $pattern;
-    $self->_register_pattern_name($_) for values %{ $routes->{names} };
-    Scalar::Util::weaken($routes->{parent_pattern});
-    return $pattern;
-}
-
-sub match {
-    my $self = shift;
-    my ($path, @args) = @_;
-
-    foreach my $pattern (@{$self->{patterns}}) {
-        if (my $m = $pattern->match($path, @args)) {
-            return $m;
-        }
-    }
-
-    return;
-}
-
-sub build_path {
-    my $self = shift;
-    my ($name, @args) = @_;
-
-    my $pattern = $self->{names}->{$name};
-
-    return $pattern->build_path(@args) if $pattern;
-
-    Carp::croak("Unknown name '$name' used to build a path");
-}
-
-sub _register_pattern_name {
-    my $self = shift;
-    my ($pattern) = @_;
-
-    my $name = $pattern->name;
-    if (exists $self->{names}->{ $name }) {
-        Carp::carp("pattern name '$name' already used");
-    }
-    else {
-        $self->{names}->{ $name } = $pattern;
-        my $parent_routes = $self->{parent_pattern} && $self->{parent_pattern}->{routes};
-        if ($parent_routes) {
-            $parent_routes->_register_pattern_name(@_);
-        }
-    }
-}
-
-sub _build_pattern { shift; return Routes::Tiny::Pattern->new(@_) }
-
-1;
-__END__
-
-=head1 NAME
+# NAME
 
 Routes::Tiny - Routes
 
-=head1 SYNOPSIS
+# SYNOPSIS
 
     my $routes = Routes::Tiny->new;
 
@@ -142,15 +38,15 @@ Routes::Tiny - Routes
     $subroutes->add_route('/article/:id');
     $routes->mount('/admin/', $subroutes);
 
-=head1 DESCRIPTION
+# DESCRIPTION
 
-L<Routes::Tiny> is a lightweight routes implementation.
+[Routes::Tiny](http://search.cpan.org/perldoc?Routes::Tiny) is a lightweight routes implementation.
 
-L<Routes::Tiny> aims to be easy to use in any web framework.
+[Routes::Tiny](http://search.cpan.org/perldoc?Routes::Tiny) aims to be easy to use in any web framework.
 
-=head1 FEATURES
+# FEATURES
 
-=head2 C<Constraints>
+## `Constraints`
 
     $routes->add_route('/articles/:id', constraints => {id => qr/\d+/});
 
@@ -160,7 +56,7 @@ L<Routes::Tiny> aims to be easy to use in any web framework.
 It is possible to specify a constraint that a placeholder must match using a
 normal Perl regular expression.
 
-=head2 C<Optional placeholders>
+## `Optional placeholders`
 
     $routes->add_route('/admin/:service(/:action)?', defaults => {action => 'list'});
 
@@ -169,7 +65,7 @@ normal Perl regular expression.
 
 It is possible to specify an optional placeholder with a default value.
 
-=head2 C<Grouping>
+## `Grouping`
 
     $routes->add_route('/(:foo)-bar');
 
@@ -179,7 +75,7 @@ It is possible to specify an optional placeholder with a default value.
 It is possible to create a placeholder that doesn't occupy all the space between
 slashes.
 
-=head2 C<Globbing>
+## `Globbing`
 
     $routes->add_route('/photos/*other');
     $routes->add_route('/books/*section/:title');
@@ -196,7 +92,7 @@ slashes.
 
 It is possible to specify a globbing placeholder.
 
-=head2 C<Passing arguments AS IS>
+## `Passing arguments AS IS`
 
     $routes->add_route('/', arguments => {one => 'two'});
 
@@ -205,7 +101,7 @@ It is possible to specify a globbing placeholder.
 
 It is possible to pass arguments to the match object AS IS.
 
-=head2 C<Path building>
+## `Path building`
 
     $routes->add_route('/articles/:id', name => 'article');
 
@@ -214,7 +110,7 @@ It is possible to pass arguments to the match object AS IS.
 
 It is possible to reconstruct a path from route's name and parameters.
 
-=head2 C<Subroutes>
+## `Subroutes`
 
     $subroutes = Routes::Tiny->new;
     $subroutes->add_route('/articles/:id', name => 'admin-article');
@@ -240,9 +136,9 @@ Parent routes mounts names of children routes, so it's possible to buil path
     $path = $routes->build_path('comments', type => 'articles', id => 123, page => 5);
     # $path is '/articles/123/comments/5/'
 
-=head1 WARNINGS
+# WARNINGS
 
-=head2 C<Trailing slash issue>
+## `Trailing slash issue`
 
 Trailing slash is important.
 
@@ -252,47 +148,47 @@ Trailing slash is important.
 
     $routes->add_route('/articles/');
 
-If you don't want this behaviour pass C<strict_trailing_slash> to the constructor:
+If you don't want this behaviour pass `strict_trailing_slash` to the constructor:
 
     my $routes = Routes::Tiny->new(strict_trailing_slash => 0);
 
-=head1 METHODS
+# METHODS
 
-=head2 C<new>
+## `new`
 
     my $routes = Routes::Tiny->new;
 
-=head2 C<add_route>
+## `add_route`
 
     $routes->add_route('/:service/:action');
 
 Add a new route.
 
-=head2 C<mount>
+## `mount`
 
     $routes->mount('/admin/', $subroutes)
 
 Includes one Routes::Tiny instance into another with given prefix.
 
-=head2 C<match>
+## `match`
 
     $routes->match('/hello/world');
 
 Match against a path.
 
-=head2 C<build_path>
+## `build_path`
 
     $pattern->build_path('name', {foo => 'bar'});
 
 Build path from a given name and params.
 
-=head1 DEVELOPMENT
+# DEVELOPMENT
 
-=head2 Repository
+## Repository
 
     http://github.com/vti/routes-tiny
 
-=head1 CREDITS
+# CREDITS
 
 Sergey Zasenko (und3f)
 
@@ -302,15 +198,13 @@ Dmitry Smal (mialinx)
 
 Dinar (ziontab)
 
-=head1 AUTHOR
+# AUTHOR
 
-Viacheslav Tykhanovskyi, C<vti@cpan.org>.
+Viacheslav Tykhanovskyi, `vti@cpan.org`.
 
-=head1 COPYRIGHT AND LICENSE
+# COPYRIGHT AND LICENSE
 
 Copyright (C) 2011-2013, Viacheslav Tykhanovskyi
 
 This program is free software, you can redistribute it and/or modify it under
 the terms of the Artistic License version 2.0.
-
-=cut
